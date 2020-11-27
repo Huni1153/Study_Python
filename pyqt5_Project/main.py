@@ -14,9 +14,11 @@ class Content(QWidget):
         self.mydll.datainit.restype = ctypes.c_int  # c라이브러리의 datainit()함수의 리턴타입 지정
         self.rand = self.mydll.datainit()
 
+        # c라이브러리의 playball()함수의 파라미터 타입과 리턴타입 지정
         self.mydll.playball.argtype = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
-        self.mydll.playball.restype = ctypes.POINTER(ctypes.c_int * 2)
-
+        self.mydll.playball.restype = ctypes.POINTER(ctypes.c_int * 2) 
+        
+        # c라이브러리의 hint()함수의 파라미터 타입과 리턴타입 지정
         self.mydll.hint.argtype = [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
         self.mydll.hint.restype = ctypes.POINTER(ctypes.c_int * 999)
 
@@ -128,55 +130,68 @@ class Content(QWidget):
         # 리셋 버튼 이벤트 호출
         self.resetBtn.clicked.connect(self.resetBtnListener)
 
-        self.oldRow = 0
-        self.newRow = 40
+        #self.oldRow = 0
+        #self.newRow = 40
+
+        self.tempNum = ""
 
     def submitBtnListener(self):
         print("확인 버튼 호출")
-        if self.row == 4:
-            print("10번 입력 초과")
-            QMessageBox.information(self, "김형근", "넌... 패배자다....")
-            QMessageBox.information(self, "김형근", "한번 더 할거냐? \n김형근 : 쫄? 쪼오올~??")
-        else:
-            tempNum = self.inputNumber.text()
-            # 여기 입력 예외처리 해야함
-            firstNum = int(tempNum) / 100
-            secondNum = int(tempNum) % 100 / 10
-            thirdNum = int(tempNum) % 100 % 10
+        if self.row == 10:
+            #print("10번 입력 초과")
+            QMessageBox.information(self, "you lose...", "10번 입력을 초과했습니다.")
 
-            res = self.mydll.playball(int(firstNum), int(secondNum), int(thirdNum))
-            print("랜덤 값 : ", self.rand)
-            resList = [i for i in res.contents]
-            print("Strike : ", resList[0], "Ball : ", resList[1])
-            self.resStrike.setText(str(resList[0]))
-            self.resBall.setText(str(resList[1]))
-            self.rightTableWidget.setItem(self.row, 0, QTableWidgetItem(str(tempNum)))
-            self.rightTableWidget.setItem(self.row, 1, QTableWidgetItem(str(resList[0])))
-            self.rightTableWidget.setItem(self.row, 2, QTableWidgetItem(str(resList[1])))
-            self.row += 1
+        else:
+            self.tempNum = self.inputNumber.text()
+            # 여기 입력 예외처리 해야함
+            if self.tempNum == "":
+                QMessageBox.information(self, "Input Error!", "숫자를 입력하세요.")
+            elif len(self.tempNum) < 3 :
+                QMessageBox.information(self, "Input Error!", "3자리숫자를 모두 입력하세요.")
+            else:
+                firstNum = int(self.tempNum) // 100
+                secondNum = int(self.tempNum) % 100 // 10
+                thirdNum = int(self.tempNum) % 100 % 10
+
+                if firstNum == secondNum or secondNum == thirdNum or firstNum == thirdNum:
+                    QMessageBox.information(self, "Input Error!", "중복된 숫자는 입력할 수 없습니다.")
+                else:
+                    res = self.mydll.playball(int(firstNum), int(secondNum), int(thirdNum))
+                    print("랜덤 값 : ", self.rand)
+                    resList = [i for i in res.contents]
+                    print("Strike : ", resList[0], "Ball : ", resList[1])
+                    self.resStrike.setText(str(resList[0]))
+                    self.resBall.setText(str(resList[1]))
+                    self.rightTableWidget.setItem(self.row, 0, QTableWidgetItem(str(self.tempNum)))
+                    self.rightTableWidget.setItem(self.row, 1, QTableWidgetItem(str(resList[0])))
+                    self.rightTableWidget.setItem(self.row, 2, QTableWidgetItem(str(resList[1])))
+                    self.row += 1
+        self.inputNumber.setText("")
 
     def hintBtnListener(self):
         print("힌트 받기 버튼 호출")
         count = 0
-        tempNum = self.inputNumber.text()
-        firstNum = int(tempNum) // 100
-        secondNum = int(tempNum) % 100 // 10
-        thirdNum = int(tempNum) % 100 % 10
-        print(tempNum)
-        res = self.mydll.hint(int(firstNum), int(secondNum), int(thirdNum), int(self.resStrike.text()),
-                              int(self.resBall.text()))
-        resList = [i for i in res.contents]
-        self.bottomTableWidget.clear()
-        for i in resList:
-            if i != -1:
-                # print(i)
-                self.oldRow = self.newRow
-                self.newRow = count // 10
-                self.bottomTableWidget.setItem(self.newRow, count % 10, QTableWidgetItem(str(i)))
-                # self.bottomTableWidget.rowResized(self.oldRow,self.oldRow,self.newRow)
-                # self.bottomTableWidget.resizeRowToContents(int(count // 10))
+        if self.tempNum == "":
+            QMessageBox.information(self, "Input Error!", "숫자를 입력하세요.")
+        else:
+            firstNum = int(self.tempNum) // 100
+            secondNum = int(self.tempNum) % 100 // 10
+            thirdNum = int(self.tempNum) % 100 % 10
+            print("입력 값 : ",self.tempNum)
+            res = self.mydll.hint(int(firstNum), int(secondNum), int(thirdNum), int(self.resStrike.text()),
+                                  int(self.resBall.text()))
+            resList = [i for i in res.contents]
+            self.bottomTableWidget.clear()
+            for i in resList:
+                if i != -1:
+                    # print(i)
+                    #self.oldRow = self.newRow
+                    #self.newRow = count // 10
+                    self.bottomTableWidget.setItem(count // 10, count % 10, QTableWidgetItem(str(i)))
+                    # self.bottomTableWidget.rowResized(self.oldRow,self.oldRow,self.newRow)
+                    # self.bottomTableWidget.resizeRowToContents(int(count // 10))
 
-                count += 1
+                    count += 1
 
     def resetBtnListener(self):
         print("리셋 버튼 호출")
@@ -208,7 +223,7 @@ class MyApp(QMainWindow):
         # 프로그램 환경 세팅
         self.setWindowTitle('NumberBaseBall - Create By [Huni]')
         self.setWindowIcon(QIcon('icon/baseball.png'))
-        self.setGeometry(-800, 600, 520, 380)
+        self.setGeometry(400, 400, 500, 580)
         self.contentWidget = Content()  # MainWindow는 자체적으로 layout을 가지고 있다. 위젯의 인스턴스 생성만으로도 QMainWindow에 붙는다.
         self.setCentralWidget(self.contentWidget)  # 그래서 setCentralWidget()로 widget을 추가해주면 된다.
 
